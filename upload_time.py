@@ -52,7 +52,7 @@ def upload_entry(time, spentOn, comments, serverParams, uploadParams):
 def upload_time(timeSeq, serverParams, uploadParams):
 	if not "projectId" in uploadParams:
 		uploadParams["projectId"] = json.loads(
-			urllib2.urlopen(serverParams["url"] + "/projects/" + uploadParams["projectKey"] + ".json?key=" + serverParams["key"]))["project"]["id"]
+			urllib2.urlopen(serverParams["url"] + "/projects/" + uploadParams["projectKey"] + ".json?key=" + serverParams["key"]).read())["project"]["id"]
 	for entry in timeSeq:
 		# TODO: Grouping
 		upload_entry(0.5, entry["When"].split(" ")[0], entry["Description"], serverParams, uploadParams)
@@ -60,15 +60,17 @@ def upload_time(timeSeq, serverParams, uploadParams):
 		uploadParams["lastTime"] = entry["When"]
 
 
-filteredTime = filter_time(parse_time("time.txt"), ".*Reader.*", datetime.strptime("2012-05-30 13:59:58 +0000", DATE_FORMAT))
+def do_all_uploads(timeFile, configFile):
+	with open(configFile) as f:
+		config = json.loads(f.read())
+	for uploadParams in config["uploads"]:
+		try:
+			filteredTime = filter_time(parse_time(timeFile), uploadParams["pattern"],
+				datetime.strptime(uploadParams["lastTime"], DATE_FORMAT) if "lastTime" in uploadParams else datetime.min)
 
-upload_time(filteredTime,
-	{
-		"url": "http://projects.componentix.com",
-		"key": "7046f99958032a4c4a007e01835ae03b07d7a6d2"
-	},
-	{
-		"pattern": ".*Reader.*",
-		"projectId": "redtest",
-		"activityId": "9"
-	})
+			upload_time(filteredTime, config["server"], uploadParams)
+		finally:
+			with open(configFile, "w") as f:
+				f.write(json.dumps(config, indent = 4))
+
+do_all_uploads("time.txt", "upload_time.json")
