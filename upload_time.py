@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+import sys
 import csv
 import re
 import json
 import urllib2
 from datetime import datetime
+from itertools import *
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S +0000"
 
@@ -53,11 +56,15 @@ def upload_time(timeSeq, serverParams, uploadParams):
 	if not "projectId" in uploadParams:
 		uploadParams["projectId"] = json.loads(
 			urllib2.urlopen(serverParams["url"] + "/projects/" + uploadParams["projectKey"] + ".json?key=" + serverParams["key"]).read())["project"]["id"]
-	for entry in timeSeq:
-		# TODO: Grouping
-		upload_entry(0.5, entry["When"].split(" ")[0], entry["Description"], serverParams, uploadParams)
 
-		uploadParams["lastTime"] = entry["When"]
+	entriesByDate = groupby(((entry["When"].split(" ")[0], entry["Description"], entry["When"]) for entry in timeSeq), lambda x : x[0])
+	for key, entries in entriesByDate:
+		entriesByDesc = groupby(entries, lambda x : x[1])
+
+		for key, entries in entriesByDesc:
+			entries = list(entries)
+			upload_entry(len(entries) * 0.5, entries[-1][0], entries[-1][1], serverParams, uploadParams)
+			uploadParams["lastTime"] = entries[-1][2]
 
 
 def do_all_uploads(timeFile, configFile):
@@ -73,4 +80,8 @@ def do_all_uploads(timeFile, configFile):
 			with open(configFile, "w") as f:
 				f.write(json.dumps(config, indent = 4))
 
-do_all_uploads("time.txt", "upload_time.json")
+if len(sys.argv) < 3:
+	sys.exit("Usage: %s <time CSV file from Pomodoro> <JSON config file>" % sys.argv[0])
+
+
+do_all_uploads(sys.argv[1], sys.argv[2])
