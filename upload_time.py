@@ -60,7 +60,7 @@ def upload_entry_jira(time, spentOn, comments, serverParams, uploadParams):
     print "issueId = " + issueId
 
     worklog = {
-        "started": spentOn + "T00:00:00.000-0000",
+        "started": spentOn + "T12:00:00.000-0000",
         "timeSpent" : str(time) + "h",
         "comment": comments
     }
