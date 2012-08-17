@@ -4,6 +4,7 @@ import csv
 import re
 import json
 import urllib2
+import requests
 from datetime import datetime
 from itertools import *
 
@@ -29,7 +30,9 @@ def filter_time(timeSeq, pattern, lastTime):
             if whenTime > lastTime:
                 yield entry
 
-def upload_entry(time, spentOn, comments, serverParams, uploadParams):
+
+
+def upload_entry_redmine(time, spentOn, comments, serverParams, uploadParams):
     print json.dumps({
             "project_id": uploadParams["projectId"],
             "spent_on": spentOn,
@@ -52,10 +55,37 @@ def upload_entry(time, spentOn, comments, serverParams, uploadParams):
     res = urllib2.urlopen(req)
     res.close()
 
-def upload_time(timeSeq, serverParams, uploadParams):
-    if not "projectId" in uploadParams:
+def upload_entry_jira(time, spentOn, comments, serverParams, uploadParams):
+    issueId = re.search(uploadParams["issuePattern"], comments).group(0)
+    print "issueId = " + issueId
+
+    worklog = {
+        "started": spentOn + "T00:00:00.000-0000",
+        "timeSpent" : str(time) + "h",
+        "comment": comments
+    }
+    print worklog
+
+    r = requests.post(serverParams["url"] + "/rest/api/2/issue/" + issueId + "/worklog",
+        data = json.dumps(worklog),
+        headers = {'Content-Type': 'application/json'},
+        auth = (serverParams["username"], serverParams["password"])
+    )
+    r.raise_for_status()
+
+def upload_entry(time, spentOn, comments, serverParams, uploadParams):
+    if serverParams["type"] == "jira":
+        upload_entry_jira(time, spentOn, comments, serverParams, uploadParams)
+    else:
+        upload_entry_redmine(time, spentOn, comments, serverParams, uploadParams)
+
+def process_upload_params(uploadParams):
+    if not "issuePattern" in uploadParams and "projectId" in uploadParams:
         uploadParams["projectId"] = json.loads(
             urllib2.urlopen(serverParams["url"] + "/projects/" + uploadParams["projectKey"] + ".json?key=" + serverParams["key"]).read())["project"]["id"]
+
+def upload_time(timeSeq, serverParams, uploadParams):
+    process_upload_params(uploadParams)
 
     entriesByDate = groupby(((entry["When"].split(" ")[0], entry["Description"], entry["When"]) for entry in timeSeq), lambda x : x[0])
     for key, entries in entriesByDate:
@@ -72,7 +102,9 @@ def do_all_uploads(timeFile, configFile):
         config = json.loads(f.read())
     for uploadParams in config["uploads"]:
         try:
-            filteredTime = filter_time(parse_time(timeFile), uploadParams["pattern"],
+            pattern = uploadParams["pattern"] if "pattern" in uploadParams else uploadParams["issuePattern"]
+
+            filteredTime = filter_time(parse_time(timeFile), pattern,
                 datetime.strptime(uploadParams["lastTime"], DATE_FORMAT) if "lastTime" in uploadParams else datetime.min)
 
             upload_time(filteredTime, config["server"], uploadParams)

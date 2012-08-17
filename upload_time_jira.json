@@ -1,0 +1,13 @@
+{
+    "uploads": [
+        {
+            "issuePattern": "PI-\\d+"
+        }
+    ],
+    "server": {
+        "url": "https://jira.example.com",
+        "username": "vasya.pupkin",
+        "password": "123456",
+        "type": "jira"
+    }
+}
