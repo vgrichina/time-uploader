@@ -79,13 +79,13 @@ def upload_entry(time, spentOn, comments, serverParams, uploadParams):
     else:
         upload_entry_redmine(time, spentOn, comments, serverParams, uploadParams)
 
-def process_upload_params(uploadParams):
+def process_upload_params(serverParams, uploadParams):
     if not "issuePattern" in uploadParams and "projectId" in uploadParams:
         uploadParams["projectId"] = json.loads(
             urllib2.urlopen(serverParams["url"] + "/projects/" + uploadParams["projectKey"] + ".json?key=" + serverParams["key"]).read())["project"]["id"]
 
 def upload_time(timeSeq, serverParams, uploadParams):
-    process_upload_params(uploadParams)
+    process_upload_params(serverParams, uploadParams)
 
     entriesByDate = groupby(((entry["When"].split(" ")[0], entry["Description"], entry["When"]) for entry in timeSeq), lambda x : x[0])
     for key, entries in entriesByDate:

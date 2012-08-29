@@ -1,15 +1,16 @@
 {
     "uploads": [
         {
-            "pattern": ".*Ben.*", 
-            "activityId": 9, 
-            "lastTime": "2012-07-02 20:10:23 +0000", 
-            "projectKey": "redtest", 
+            "pattern": ".*Ben.*",
+            "activityId": 9,
+            "lastTime": "2012-07-02 20:10:23 +0000",
+            "projectKey": "redtest",
             "projectId": 1
         }
-    ], 
+    ],
     "server": {
-        "url": "http://projects.componentix.com", 
+        "type": "redmine",
+        "url": "http://projects.componentix.com",
         "key": "7046f99958032a4c4a007e01835ae03b07d7a6d2"
     }
 }
