@@ -80,7 +80,7 @@ def upload_entry(time, spentOn, comments, serverParams, uploadParams):
         upload_entry_redmine(time, spentOn, comments, serverParams, uploadParams)
 
 def process_upload_params(serverParams, uploadParams):
-    if not "issuePattern" in uploadParams and "projectId" in uploadParams:
+    if not "issuePattern" in uploadParams and not "projectId" in uploadParams:
         uploadParams["projectId"] = json.loads(
             urllib2.urlopen(serverParams["url"] + "/projects/" + uploadParams["projectKey"] + ".json?key=" + serverParams["key"]).read())["project"]["id"]
 
